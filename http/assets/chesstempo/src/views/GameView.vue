@@ -57,9 +57,12 @@ const populate = (id: GameIdentifier, state: GameState) => {
     },
   };
 
-  if (state.Turn! === "User") {
-    config.turnColor = config.movable!.color =
-      state.Color! === "White" ? "white" : "black";
+  if (state.Turn === "User") {
+    const color = state.Color === "White" ? "white" : "black";
+    config.turnColor = color;
+    if (config.movable) {
+      config.movable.color = color;
+    }
   }
 
   if (!board?.value) return;
@@ -83,7 +86,6 @@ const poll = async (id: GameIdentifier) => {
   populate(id, state);
 
   while (state.Turn === Turn.Machine) {
-    console.log("while");
     await wait();
     s = await fetchGame(id);
     Object.assign(state, s);
