@@ -3,6 +3,7 @@ package temporal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -38,10 +39,10 @@ func (c *Client) Create(logger logr.Logger) (err error) {
 
 	if c.Embedded {
 		if err := c.embedTemporal(logger.WithName("server")); err != nil {
-			return err
+			return fmt.Errorf("error starting temporalite: %v", err)
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
 		if c.Client, err = c.Server.NewClientWithOptions(ctx, opts); err != nil {

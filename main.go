@@ -70,7 +70,7 @@ func (m *Main) Run(ctx context.Context) error {
 	m.Temporal.Embedded = embedded
 	m.Temporal.Ephemeral = ephemeral
 	if err := m.Temporal.Create(logger.WithName("temporal")); err != nil {
-		return err
+		return fmt.Errorf("failed to create Temporal client: %v", err)
 	}
 
 	// Start bot.
