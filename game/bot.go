@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/notnil/chess"
@@ -44,6 +45,8 @@ func (b *Bot) Stop() {
 	defer b.ng.Close()
 }
 
+const BotActivityName = "play"
+
 type BotActivity struct {
 	bot *Bot
 }
@@ -63,7 +66,11 @@ func (b *BotActivity) Execute(ctx context.Context, fen string) (string, error) {
 		return "", err
 	}
 
-	return ChessNotation.Encode(game.Position(), move), nil
+	encoded := ChessNotation.Encode(game.Position(), move)
+
+	log.Println("Generated move:", encoded)
+
+	return encoded, nil
 }
 
 func createGame(fen string) (*chess.Game, error) {

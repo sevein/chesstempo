@@ -45,6 +45,8 @@ func (c *Client) Create(logger logr.Logger) (err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
+		logger.Info("Temporal running in embedded mode", "frontend", c.Server.FrontendHostPort())
+
 		if c.Client, err = c.Server.NewClientWithOptions(ctx, opts); err != nil {
 			return err
 		}
@@ -70,7 +72,7 @@ func (c *Client) Close() error {
 func (c *Client) embedTemporal(logger logr.Logger) (err error) {
 	opts := []temporalite.ServerOption{
 		temporalite.WithNamespaces(c.Namespace),
-		temporalite.WithDynamicPorts(),
+		temporalite.WithFrontendPort(11111),
 		temporalite.WithUpstreamOptions(
 			temporal.WithLogger(serverLogger{logger}),
 		),

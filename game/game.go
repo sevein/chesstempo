@@ -225,7 +225,8 @@ func GameWorkflow(ctx workflow.Context, params GameWorkflowParams) (*GameInfo, e
 		}
 
 		if err != nil {
-			continue
+			logger.Error("Game quit unexpectedly", "err", err)
+			return nil, err
 		}
 
 		turn.Shift()
@@ -236,33 +237,39 @@ func GameWorkflow(ctx workflow.Context, params GameWorkflowParams) (*GameInfo, e
 	return NewInfoFromGame(game, params.Color, turn), nil
 }
 
-// machinesMove is a naive chess player that picks moves randomly.
+// machinesMove attempts to move using an activity worker, but it will choose
+// a random move if the activity timed out, e.g. worker not present.
 func machinesMove(ctx workflow.Context, game *chess.Game, turn Turn) error {
+	logger := workflow.GetLogger(ctx)
+
 	var move string
 	opts := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		TaskQueue:              "queue",
-		ScheduleToStartTimeout: time.Second * 2,
-		StartToCloseTimeout:    time.Second * 2,
+		ScheduleToCloseTimeout: time.Second * 5,
+		StartToCloseTimeout:    time.Second * 5,
 	})
-	err := workflow.ExecuteActivity(opts, "play", game.FEN()).Get(ctx, &move)
-	if err != nil {
-		return err
+	err := workflow.ExecuteActivity(opts, BotActivityName, game.FEN()).Get(ctx, &move)
+	if err == nil {
+		return game.MoveStr(move)
 	}
 
-	return game.MoveStr(move)
+	if strings.Contains(err.Error(), "ActivityNotRegisteredError") {
+		logger.Warn("Bot activity worker timed out, next move will be random")
 
-	/*
-		// We use the SideEffect API because it records its output in the workflow
-		// history providing the required determinism.
 		move := ""
 		moves := validMoves(game)
-		workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+
+		if err := workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 			move := moves[rand.Intn(len(moves))]
 			return move
-		}).Get(&move)
+		}).Get(&move); err != nil {
+			return err
+		}
 
 		return game.MoveStr(move)
-	*/
+	}
+
+	return err
 }
 
 // validMoves returns a slice of valid moves encoded using ChessNotation.

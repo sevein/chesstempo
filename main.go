@@ -12,7 +12,6 @@ import (
 	"github.com/sevein/chesstempo/temporal"
 
 	"github.com/go-logr/stdr"
-	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/worker"
 )
 
@@ -41,7 +40,6 @@ func main() {
 type Main struct {
 	Temporal       *temporal.Client
 	TemporalWorker worker.Worker
-	Bot            *game.Bot
 	HTTPServer     *http.Server
 }
 
@@ -73,29 +71,18 @@ func (m *Main) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to create Temporal client: %v", err)
 	}
 
-	// Start bot.
-	bot, err := game.NewBot()
-	if err != nil {
-		return err
-	}
-	m.Bot = bot
-
 	// Start worker.
 	w := worker.New(m.Temporal.Client, taskQueue, worker.Options{})
 	if err := w.Start(); err != nil {
 		return err
 	}
 	w.RegisterWorkflow(game.GameWorkflow)
-	w.RegisterActivityWithOptions(
-		game.NewBotActivity(bot).Execute,
-		activity.RegisterOptions{Name: "play"},
-	)
 
 	// Start HTTP server.
 	m.HTTPServer.TemporalClient = m.Temporal.Client
 	m.HTTPServer.Addr = addr
 	if err := m.HTTPServer.Open(); err != nil {
-		return err
+		return fmt.Errorf("failed to create web server: %v", err)
 	}
 
 	go func() { http.ListenAndServeDebug() }()
@@ -108,10 +95,6 @@ func (m *Main) Close() error {
 		if err := m.HTTPServer.Close(); err != nil {
 			return err
 		}
-	}
-
-	if m.Bot != nil {
-		m.Bot.Stop()
 	}
 
 	if m.TemporalWorker != nil {
