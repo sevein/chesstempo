@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"io/fs"
 	"net"
 	"net/http"
 	"time"
@@ -51,13 +50,8 @@ func NewServer() *Server {
 
 	// Assets.
 	{
-		filesystem, err := fs.Sub(assets.FS, "chesstempo/dist")
-		if err != nil {
-			panic(err)
-		}
-
-		root := http.FS(filesystem)
-		router.PathPrefix("/").Handler(http.FileServer(root))
+		web := assets.SPAHandler()
+		router.PathPrefix("/").HandlerFunc(web)
 	}
 
 	s.server.Handler = router

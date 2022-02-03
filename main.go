@@ -84,6 +84,7 @@ func (m *Main) Run(ctx context.Context) error {
 	if err := m.HTTPServer.Open(); err != nil {
 		return fmt.Errorf("failed to create web server: %v", err)
 	}
+	logger.Info("HTTP server listening", "addr", m.HTTPServer.Addr)
 
 	go func() { http.ListenAndServeDebug() }()
 
