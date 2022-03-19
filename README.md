@@ -26,6 +26,11 @@ Run it as follows:
 
     ./chesstempo
 
+After `chesstempo` starts, run the activity worker from the root in a
+separate terminal as follows:
+
+    go run ./cmd/worker
+
 Go to http://127.0.0.1:9999.
 
 ## Demo
